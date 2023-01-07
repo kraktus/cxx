@@ -88,7 +88,9 @@ std::unique_ptr<::H::H> c_return_ns_unique_ptr() {
 
 const size_t &c_return_ref(const Shared &shared) { return shared.z; }
 
-const size_t &c_return_ns_ref(const ::A::AShared &shared) { return shared.z; }
+const size_t &c_return_ns_ref(const ::A::AShared &shared) {
+  return shared.type;
+}
 
 const size_t &c_return_nested_ns_ref(const ::A::B::ABShared &shared) {
   return shared.z;
@@ -248,7 +250,7 @@ void c_take_shared(Shared shared) {
 }
 
 void c_take_ns_shared(::A::AShared shared) {
-  if (shared.z == 2020) {
+  if (shared.type == 2020) {
     cxx_test_suite_set_correct();
   }
 }
@@ -405,7 +407,7 @@ void c_take_rust_vec_shared(rust::Vec<Shared> v) {
 void c_take_rust_vec_ns_shared(rust::Vec<::A::AShared> v) {
   uint32_t sum = 0;
   for (auto i : v) {
-    sum += i.z;
+    sum += i.type;
   }
   if (sum == 2021) {
     cxx_test_suite_set_correct();
@@ -926,7 +928,7 @@ void ns_c_take_trivial(::tests::D d) {
 }
 
 void ns_c_take_ns_shared(::A::AShared shared) {
-  if (shared.z == 2020) {
+  if (shared.type == 2020) {
     cxx_test_suite_set_correct();
   }
 }

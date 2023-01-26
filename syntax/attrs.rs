@@ -3,10 +3,10 @@ use crate::syntax::namespace::Namespace;
 use crate::syntax::report::Errors;
 use crate::syntax::Atom::{self, *};
 use crate::syntax::{cfg, Derive, Doc, ForeignName};
-use proc_macro2::{Ident, TokenStream};
+use proc_macro2::{Ident, TokenStream, Span};
 use quote::ToTokens;
 use syn::parse::{Nothing, Parse, ParseStream, Parser as _};
-use syn::{parenthesized, token, Attribute, Error, LitStr, Path, Result, Token};
+use syn::{parenthesized, token, Attribute, Error, LitStr, Path, Result, Token, AttrStyle};
 
 // Intended usage:
 //
@@ -162,6 +162,16 @@ pub fn parse(cx: &mut Errors, attrs: Vec<Attribute>, mut parser: Parser) -> Othe
             // https://doc.rust-lang.org/reference/attributes/diagnostics.html
             passthrough_attrs.push(attr);
             continue;
+        } else if attr.path.is_ident("rust_only") {
+            // custom attribute of the form #[rust_only(attr)]
+            // which will be converted to #[attr]
+            match attr.parse_args_with(parse_cxx_rust_only_attribute) {
+                Ok(attr) => {
+                    passthrough_attrs.push(attr);
+                    continue;
+                }
+                Err(err) => cx.push(err),
+            }
         } else if attr.path.is_ident("serde") {
             passthrough_attrs.push(attr);
             continue;
@@ -256,6 +266,20 @@ fn parse_cxx_name_attribute(input: ParseStream) -> Result<ForeignName> {
         let ident: Ident = input.parse()?;
         ForeignName::parse(&ident.to_string(), ident.span())
     }
+}
+
+fn parse_cxx_rust_only_attribute(input: ParseStream) -> Result<Attribute> {
+    Ok(Attribute {
+        pound_token: syn::token::Pound {
+            spans: [Span::call_site()]
+        },
+        bracket_token: syn::token::Bracket {
+            span: Span::call_site()
+        },
+        path: input.parse()?,
+        style: AttrStyle::Outer,
+        tokens: input.parse()?,
+    })
 }
 
 fn parse_rust_name_attribute(input: ParseStream) -> Result<Ident> {
